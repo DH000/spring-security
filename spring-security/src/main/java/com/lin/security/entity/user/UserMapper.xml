@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <!-- 命名空间对应mapper接口 -->
+ <mapper namespace="com.lin.security.mapper.user.UserMapper">
+ 	<resultMap type="com.lin.security.entity.user.User" id="user">
+ 		<result property="id" column="id"/>
+ 		<result property="username" column="username"/>
+ 		<result property="password" column="password"/>
+ 		<result property="salt" column="salt"/>
+ 		<result property="mobile" column="mobile"/>
+ 		<result property="email" column="email"/>
+ 		<result property="sexType" column="sex_type" typeHandler="com.lin.security.type.handler.EnumTypeHandler"/>
+ 		<result property="birthdate" column="birthdate"/>
+ 		<result property="registerTime" column="register_time"/>
+ 		<result property="lastLoginTime" column="last_login_time"/>
+ 	</resultMap>
+ 	
+ 	<!-- 根据id查询 -->
+ 	<select id="find" resultMap="user" >
+ 		select * from user where id = #{id}
+ 	</select>
+ 	
+ 	<!-- 根据用户名查询 -->
+ 	<select id="findByUsername" resultMap="user" >
+ 		select * from user where username = #{username}
+ 	</select>
+ 	
+ 	<!-- 根据用户名查询密码 -->
+ 	<select id="findPasswordByUsername" resultType="string" >
+ 		select password from user where username = #{username}
+ 	</select>
+ 	
+ 	<!-- 统计用户 -->
+ 	<select id="count" resultType="long">
+ 		select count(id) from user
+ 	</select>
+ </mapper>
+ 
+ 

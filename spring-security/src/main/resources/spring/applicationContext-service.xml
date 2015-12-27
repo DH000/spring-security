@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<description>service配置文件</description>
+	
+	<bean id="userService" class="com.lin.security.service.user.impl.UserServiceImpl" autowire="byName" />
+	<bean id="permissionService" class="com.lin.security.service.permission.impl.PermissionServiceImpl" autowire="byName" />
+
+</beans>

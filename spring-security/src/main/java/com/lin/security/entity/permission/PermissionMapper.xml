@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.lin.security.mapper.permission.PermissionMapper">
+	<resultMap type="com.lin.security.entity.permission.Permission" id="permission">
+		<result property="id" column="id"/>
+		<result property="name" column="name"/>
+		<result property="type" column="type" typeHandler="com.lin.security.type.handler.EnumTypeHandler"/>
+		<result property="url" column="url" />
+		<result property="parentId" column="parent_id" />
+		<result property="parentIds" column="parent_ids" />
+		<result property="alias" column="permission_alias" />
+		<result property="sort" column="sort" />
+		<result property="isDelete" column="is_delete" />
+		<result property="createTime" column="create_time" />
+	</resultMap>
+	
+	<select id="find" resultMap="permission">
+		select * from permission where id = #{id}
+	</select>
+	
+	<select id="findByUser" resultMap="permission">
+		select per.* from user_permission uPer left join permission per on per.id = uPer.permission_id where uPer.user_id = #{userId} and per.is_delete = 0
+	</select>
+	
+	<select id="findByUserAndType" resultMap="permission">
+		select per.* from user_permission uPer left join permission per on per.id = uPer.permission_id where uPer.user_id = #{userId} 
+		and per.type = #{type, typeHandler = com.lin.security.type.handler.EnumTypeHandler} and per.is_delete = 0 order by sort 
+	</select>
+	
+	<select id="count" resultType="int">
+		<choose>
+			<when test="null == userId">
+				select count(id) from permission where is_delete = 0
+				<if test="null != type">
+					and type = #{type, typeHandler = com.lin.security.type.handler.EnumTypeHandler} 
+				</if>
+			</when>
+			<otherwise>
+				select count(uPer.id) from user_permission uPer left join permission per on per.id = uPer.permission_id where per.is_delete = 0 and uPer.user_id = #{userId} 
+				<if test="null != type">
+					and per.type = #{type, typeHandler = com.lin.security.type.handler.EnumTypeHandler} 
+				</if>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findForPage" resultMap="permission">
+		<choose>
+			<when test="null == userId">
+				select * from permission where is_delete = 0
+				<if test="null != type">
+					and type = #{type, typeHandler = com.lin.security.type.handler.EnumTypeHandler} 
+				</if>
+				limit #{offset}, #{length} 
+			</when>
+			<otherwise>
+				select per.* from user_permission uPer left join permission per on per.id = uPer.permission_id where per.is_delete = 0 and uPer.user_id = #{userId} 
+				<if test="null != type">
+					and per.type = #{type, typeHandler = com.lin.security.type.handler.EnumTypeHandler} 
+				</if>
+				limit #{offset}, #{length}
+			</otherwise>
+		</choose>
+	</select>
+</mapper>
+
+
+
+
+
+

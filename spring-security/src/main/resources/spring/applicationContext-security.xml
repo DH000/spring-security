@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:s="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security 
+	   					   http://www.springframework.org/schema/security/spring-security-4.0.xsd
+						   http://www.springframework.org/schema/beans 
+						   http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<description>security4配置</description>
+	
+	<!-- 匿名访问 -->
+	<s:http pattern="/js/**" security="none" />
+	<s:http pattern="/css/**" security="none" />
+	<s:http pattern="/assets/**" security="none" />
+	<s:http pattern="/errors/**" security="none" />
+	<s:http pattern="/fonts/**" security="none" />
+	<s:http pattern="/img/**" security="none" />
+	<s:http pattern="/captcha" security="none" />
+	<!-- 登录页面匿名 -->
+	<s:http pattern="${security.login.page}" security="none" />
+	
+	<!-- use-expressions: access表达式 -->
+	<s:http pattern="/**" auto-config="false" entry-point-ref="loginEntryPoint">
+		<!-- 配置登录验证码过滤器 -->
+		<s:custom-filter ref="captchaAuthenticationFilter" position="FORM_LOGIN_FILTER"/>
+		<!-- 记住我过滤器 -->
+		<s:custom-filter ref="rememberMeAuthenticationFilter" position="REMEMBER_ME_FILTER"/>
+		<!-- 登出过滤器 -->
+		<s:custom-filter ref="logoutFilter" position="LOGOUT_FILTER"/>
+		<!-- 自动登录匿名 isAuthenticated()底层源码非匿名 -->
+		<s:intercept-url pattern="/" access="isAuthenticated()"/>
+		<!-- 不支持session分布式管理 -->
+		<s:session-management session-authentication-strategy-ref="registerSessionAuthenticationStrategy" />
+		<!-- 禁用跨域 -->
+		<s:csrf disabled="true" />
+		<!-- 全匹配需放置最后 -->
+		<s:intercept-url pattern="/**" access="isFullyAuthenticated()" />
+	</s:http>
+	
+	<!-- 配置认证授权管理 -->
+	<s:authentication-manager id="authenticationManager">
+		<s:authentication-provider ref="userAuthenticationProvider" />
+		<s:authentication-provider ref="rememberMeAuthenticationProvider" />
+	</s:authentication-manager>
+	
+	<!-- 登录 -->
+	<!-- 带验证码登录过滤器 -->
+	<bean id="captchaAuthenticationFilter" class="com.lin.security.filter.CaptchaAuthenticationFilter">
+		<property name="captchaNameParameter" value="captcha"/>
+		<property name="usernameParameter" value="username"/>
+		<property name="passwordParameter" value="password"/>
+		
+		<!-- 自定义session管理 -->
+		<!-- <property name="sessionAuthenticationStrategy" ref="sessionFixationProtectionStrategy" /> -->
+		<property name="rememberMeServices" ref="rememberMeServices" />
+		<property name="authenticationManager" ref="authenticationManager" />
+		<property name="authenticationFailureHandler" ref="userAuthenticationFailureHandler" />
+		<property name="authenticationSuccessHandler" ref="userAuthenticationSuccessHandler" />
+	</bean>
+	<!-- 自定义认证授权(带自定义密码校验) -->
+	<bean id="userAuthenticationProvider" class="com.lin.security.provider.UserAuthenticationProvider" autowire="byName" />
+	<!-- 密码校验 -->
+	<bean id="userPasswordEncoder" class="com.lin.security.password.UserPasswordEncoder">
+		<!-- 加密次数 -->
+		<property name="encodeNum" value="2" />
+	</bean>
+	<!-- END 登录 -->
+	
+	<!-- 记住我 -->
+	<!-- 记住我过滤器 -->
+	<bean id="rememberMeAuthenticationFilter" class="org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter">
+		<constructor-arg index="0" ref="authenticationManager" />
+		<constructor-arg index="1" ref="rememberMeServices" />
+		<property name="authenticationSuccessHandler" ref="userAuthenticationSuccessHandler" />
+	</bean>
+	<bean id="rememberMeAuthenticationProvider" class="org.springframework.security.authentication.RememberMeAuthenticationProvider">
+		<!-- 必需要与rememberMeServices中一致 -->
+		<constructor-arg value="${security.cookie.key}" />
+	</bean>
+	<bean id="rememberMeServices" class="org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices">
+		<!-- 看底层代码作用以防伪造cookie -->
+		<constructor-arg index="0" value="${security.cookie.key}" />
+		<constructor-arg index="1" ref="userDetailsService" />
+		<property name="parameter" value="rememberMe" />
+	</bean>
+	<!-- END 记住我 -->
+	
+	<!-- logout过滤器 -->
+	<bean id="logoutFilter" class="org.springframework.security.web.authentication.logout.LogoutFilter">
+		<constructor-arg index="0" value="${security.login.page}" />
+		<constructor-arg index="1">
+			<list>
+				<!-- 清理SecurityContext -->
+				<bean class="org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler" />
+				<!-- 清理RememberMe Cookie -->
+				<ref bean="rememberMeServices"/>
+			</list>
+		</constructor-arg>
+	</bean>
+	<!-- END logout过滤器 -->
+	
+	<!-- session 管理(分布式实现) -->
+	<bean id="registerSessionAuthenticationStrategy" class="org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy">
+		<constructor-arg>
+			<bean class="org.springframework.security.core.session.SessionRegistryImpl" />
+		</constructor-arg>
+	</bean>
+	<!-- END session 管理 -->
+	
+	<!-- 配置登录页面入口(需要使用自定义登录过滤器才使用) -->
+	<bean id="loginEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+		<constructor-arg value="${security.login.page}" />
+	</bean>
+	
+	<!-- 自定义认证service -->
+	<bean id="userDetailsService" class="com.lin.security.authorit.service.impl.UserDetailsServiceImpl" autowire="byName" />
+
+	<!-- 认证handler -->
+	<bean id="userAuthenticationFailureHandler" class="com.lin.security.handler.UserAuthenticationFailureHandler" />
+	<bean id="userAuthenticationSuccessHandler" class="com.lin.security.handler.UserAuthenticationSuccessHandler" />
+	<!-- END 认证handler -->
+
+</beans>
